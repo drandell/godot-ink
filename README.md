@@ -16,12 +16,12 @@ When the plugin is properly loaded, you should be able to use the new ink panel 
 
 ![](inspector_screenshot.png)
 
-The last thing you'll need to do in order to get going is to put `ink-engine-runtime.dll` at the root of your Godot project.
+The last thing you'll need to do in order to get going is to put `ink-engine-runtime.dll` at the root of your Godot project,
 `ink-engine-runtime.dll` can be found in the [ink compiler](https://github.com/inkle/ink/releases).
 
 If you want to directly compile your `.ink` files, you'll also need to download the [ink compiler](https://github.com/inkle/ink/releases) on your computer and copy/paste the path to `inklecate.exe` into your project settings (*Project -> Project Settings... -> Ink -> Inklecate Path*).
 
-*Note: Inklecate Path is the full path to the `inklecate.exe` i.e. C:/inklecate_windows_and_linux/inklecate.exe*
+*Note: Inklecate Path is the full path to the `inklecate.exe`e.g. C:/inklecate_windows_and_linux/inklecate.exe*
 
 ---
 
