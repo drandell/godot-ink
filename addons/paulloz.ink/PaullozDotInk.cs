@@ -39,7 +39,7 @@ public class PaullozDotInk : EditorPlugin
                     { "name", property_name },
                     { "type", setting["type"] },
                     { "hint", setting["hint"] },
-                    { "hint_string", setting["hint_string"] },
+                    { "hint_string", setting["hint_string"] }
                 });
             }
         }

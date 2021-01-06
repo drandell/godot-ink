@@ -85,3 +85,6 @@ func get_source_file_content(source_file):
 
     file.close()
     return raw_content
+
+func get_option_visibility(option, options):
+    return true
