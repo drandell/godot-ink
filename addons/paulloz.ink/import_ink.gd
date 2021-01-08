@@ -36,9 +36,10 @@ func import_from_ink(source_file, save_path, options):
     if ProjectSettings.has_setting(setting) and ProjectSettings.property_can_revert(setting):
         var inklecate = ProjectSettings.get_setting(setting)
         var new_file = "%d.json" % int(randf() * 100000)
+        var filepath = "%s/%s" % [OS.get_user_data_dir(), new_file]
         var arguments = [
-            inklecate, "-o",
-            "%s/%s" % [OS.get_user_data_dir(), new_file],
+            "-o",
+            filepath,
             ProjectSettings.globalize_path(source_file)
         ]
 
@@ -46,7 +47,6 @@ func import_from_ink(source_file, save_path, options):
             "X11", "OSX":
                 var _err = OS.execute("mono", arguments, true)
             "Windows":
-                arguments.pop_front()
                 var _err = OS.execute(inklecate, arguments, true)
             _:
                 return null
