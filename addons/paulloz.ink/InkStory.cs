@@ -8,121 +8,123 @@ using System.Collections.Generic;
 public class InkStory : Node
 {
     // All the signals we'll need
-    [Signal] public delegate void InkContinued(String text, String[] tags);
+    [Signal] public delegate void InkContinued(string text, string[] tags);
     [Signal] public delegate void InkEnded();
-    [Signal] public delegate void InkChoices(String[] choices);
-    public delegate void InkVariableChanged(String variableName, object variableValue);
+    [Signal] public delegate void InkChoices(string[] choices);
+    public delegate void InkVariableChanged(string variableName, object variableValue);
 
-    private String ObservedVariableSignalName(String name)
+    private string ObservedVariableSignalName(string name)
     {
         return $"{nameof(InkVariableChanged)}-{name}";
     }
 
     // All the exported variables
-    [Export] public Boolean AutoLoadStory = false;
+    [Export] public bool AutoLoadStory = false;
     [Export] public Resource InkFile = null;
 
     // All the public variables
-    public String CurrentText { get { return this.story?.currentText ?? ""; } }
-    public String[] CurrentTags { get { return this.story?.currentTags.ToArray() ?? new String[0]; } }
-    public String[] CurrentChoices { get { return this.story?.currentChoices.ConvertAll<String>(choice => choice.text).ToArray() ?? new String[0]; } }
+    public string CurrentText { get { return story?.currentText ?? ""; } }
+    public string[] CurrentTags { get { return story?.currentTags.ToArray() ?? new string[0]; } }
+    public string[] CurrentChoices => story?.currentChoices.ConvertAll<string>(choice => choice.text).ToArray() ?? new string[0];
 
     // All the properties
-    public bool CanContinue { get { return this.story?.canContinue ?? false; } }
-    public bool HasChoices { get { return this.story?.currentChoices.Count > 0; } }
-    public String[] GlobalTags { get { return this.story?.globalTags.ToArray() ?? new String[0]; } }
+    public bool CanContinue { get { return story?.canContinue ?? false; } }
+    public bool HasChoices { get { return story?.currentChoices.Count > 0; } }
+    public string[] GlobalTags { get { return story?.globalTags.ToArray() ?? new string[0]; } }
 
     private Ink.Runtime.Story story = null;
-    private List<String> observedVariables = new List<String>();
+    private List<string> observedVariables = new List<string>();
     private Ink.Runtime.Story.VariableObserver observer;
 
-    private void reset()
+    private void Reset()
     {
-        if (this.story == null)
+        if (story == null)
             return;
 
-        foreach (String varName in this.observedVariables)
-            this.RemoveVariableObserver(varName, false);
-        this.observedVariables.Clear();
+        foreach (string varName in observedVariables)
+            RemoveVariableObserver(varName, false);
+        observedVariables.Clear();
 
-        this.story =  null;
+        story =  null;
     }
 
     public override void _Ready()
     {
-        this.observer = (String varName, object varValue) => {
-            if (this.observedVariables.Contains(varName))
-                this.EmitSignal(this.ObservedVariableSignalName(varName), varName, this.marshallVariableValue(varValue));
+        observer = (string varName, object varValue) => {
+            if (observedVariables.Contains(varName))
+                EmitSignal(ObservedVariableSignalName(varName), varName, MarshallVariableValue(varValue));
         };
 
-        if (this.AutoLoadStory)
-            this.LoadStory();
+        if (AutoLoadStory)
+            LoadStory();
     }
 
-    public Boolean LoadStory()
+    public bool LoadStory()
     {
-        this.reset();
+        Reset();
 
-        if (!this.isJSONFileValid())
+        if (!IsJSONFileValid())
         {
             GD.PrintErr("The story you're trying to load is not valid.");
             return false;
         }
 
-        this.story = new Ink.Runtime.Story(this.InkFile.GetMeta("content") as String);
+        story = new Ink.Runtime.Story(InkFile.GetMeta("content") as string);
         return true;
     }
 
-    public Boolean LoadStoryFromString(String story)
+    public bool LoadStoryFromString(string story)
     {
-        this.InkFile = new Resource();
-        this.InkFile.SetMeta("content", story);
-        return this.LoadStory();
+        InkFile = new Resource();
+        InkFile.SetMeta("content", story);
+        return LoadStory();
     }
 
-    public Boolean LoadStoryAndSetState(String state)
+    public bool LoadStoryAndSetState(string state)
     {
-        if (!this.LoadStory())
+        if (!LoadStory())
             return false;
-        this.SetState(state);
+        SetState(state);
         return true;
     }
 
-    public String Continue()
+    public string Continue()
     {
-        String text = null;
+        string text = null;
 
         // Continue if we can
-        if (this.CanContinue)
+        if (CanContinue)
         {
-            this.story.Continue();
-            text = this.CurrentText;
+            story.Continue();
+            text = CurrentText;
 
-            this.EmitSignal(nameof(InkContinued), new object[] { this.CurrentText, this.CurrentTags });
-            if (this.HasChoices) // Check if we have choices after continuing
-                this.EmitSignal(nameof(InkChoices), new object[] { this.CurrentChoices });
+            EmitSignal(nameof(InkContinued), new object[] { CurrentText, CurrentTags });
+            if (HasChoices) // Check if we have choices after continuing
+                EmitSignal(nameof(InkChoices), new object[] { CurrentChoices });
         }
-        else if (!this.HasChoices) // If we can't continue and don't have any choice, we're at the end
-            this.EmitSignal(nameof(InkEnded));
+        else if (!HasChoices) // If we can't continue and don't have any choice, we're at the end
+        {
+            EmitSignal(nameof(InkEnded));
+        }
 
         return text;
     }
 
     public void ChooseChoiceIndex(int index)
     {
-        if (index >= 0 && index < this.story?.currentChoices.Count)
+        if (index >= 0 && index < story?.currentChoices.Count)
         {
-            this.story.ChooseChoiceIndex(index);
-            this.Continue();
+            story.ChooseChoiceIndex(index);
+            Continue();
         }
     }
 
-    public bool ChoosePathString(String pathString)
+    public bool ChoosePathString(string pathString)
     {
         try
         {
-            if (this.story != null)
-                this.story.ChoosePathString(pathString);
+            if (story != null)
+                story.ChoosePathString(pathString);
             else
                 return false;
         }
@@ -135,40 +137,40 @@ public class InkStory : Node
         return true;
     }
 
-    public int VisitCountAtPathString(String pathString)
+    public int VisitCountAtPathString(string pathString)
     {
-        return this.story?.state.VisitCountAtPathString(pathString) ?? 0;
+        return story?.state.VisitCountAtPathString(pathString) ?? 0;
     }
 
-    public String[] TagsForContentAtPath(String pathString)
+    public string[] TagsForContentAtPath(string pathString)
     {
-        return this.story?.TagsForContentAtPath(pathString).ToArray() ?? new String[0];
+        return story?.TagsForContentAtPath(pathString).ToArray() ?? new string[0];
     }
 
-    public object GetVariable(String name)
+    public object GetVariable(string name)
     {
-        return this.marshallVariableValue(this.story?.variablesState[name]);
+        return MarshallVariableValue(story?.variablesState[name]);
     }
 
-    public void SetVariable(String name, object value_)
+    public void SetVariable(string name, object value_)
     {
-        if (this.story != null)
-            this.story.variablesState[name] = value_;
+        if (story != null)
+            story.variablesState[name] = value_;
     }
 
-    public String ObserveVariable(String name)
+    public string ObserveVariable(string name)
     {
-        if (this.story != null)
+        if (story != null)
         {
-            String signalName = this.ObservedVariableSignalName(name);
+            string signalName = ObservedVariableSignalName(name);
 
-            if (!this.observedVariables.Contains(name))
+            if (!observedVariables.Contains(name))
             {
-                if (!this.HasUserSignal(signalName))
+                if (!HasUserSignal(signalName))
                     AddUserSignal(signalName);
 
-                this.observedVariables.Add(name);
-                this.story.ObserveVariable(name, this.observer);
+                observedVariables.Add(name);
+                story.ObserveVariable(name, observer);
             }
 
             return signalName;
@@ -177,110 +179,110 @@ public class InkStory : Node
         return null;
     }
 
-    public void RemoveVariableObserver(String name)
+    public void RemoveVariableObserver(string name)
     {
-        this.RemoveVariableObserver(name, true);
+        RemoveVariableObserver(name, true);
     }
 
-    private void RemoveVariableObserver(String name, Boolean clear)
+    private void RemoveVariableObserver(string name, bool clear)
     {
-        if (this.story != null)
+        if (story != null)
         {
-            if (this.observedVariables.Contains(name))
+            if (observedVariables.Contains(name))
             {
-                String signalName = this.ObservedVariableSignalName(name);
-                if (this.HasUserSignal(signalName))
+                string signalName = ObservedVariableSignalName(name);
+                if (HasUserSignal(signalName))
                 {
-                    Godot.Collections.Array connections = this.GetSignalConnectionList(signalName);
+                    Godot.Collections.Array connections = GetSignalConnectionList(signalName);
                     foreach (Godot.Collections.Dictionary connection in connections)
-                        this.Disconnect(signalName, connection["target"] as Godot.Object, connection["method"] as String);
+                        Disconnect(signalName, connection["target"] as Godot.Object, connection["method"] as string);
                     // Seems like there's no way to undo `AddUserSignal` so we're just going to unbind everything :/
                 }
 
-                this.story.RemoveVariableObserver(null, name);
+                story.RemoveVariableObserver(null, name);
 
                 if (clear)
-                    this.observedVariables.Remove(name);
+                    observedVariables.Remove(name);
             }
         }
     }
 
-    public void BindExternalFunction(String inkFuncName, Func<object> func)
+    public void BindExternalFunction(string inkFuncName, Func<object> func)
     {
-        this.story?.BindExternalFunction(inkFuncName, func);
+        story?.BindExternalFunction(inkFuncName, func);
     }
 
-    public void BindExternalFunction<T>(String inkFuncName, Func<T, object> func)
+    public void BindExternalFunction<T>(string inkFuncName, Func<T, object> func)
     {
-        this.story?.BindExternalFunction(inkFuncName, func);
+        story?.BindExternalFunction(inkFuncName, func);
     }
 
-    public void BindExternalFunction<T1, T2>(String inkFuncName, Func<T1, T2, object> func)
+    public void BindExternalFunction<T1, T2>(string inkFuncName, Func<T1, T2, object> func)
     {
-        this.story?.BindExternalFunction(inkFuncName, func);
+        story?.BindExternalFunction(inkFuncName, func);
     }
 
-    public void BindExternalFunction<T1, T2, T3>(String inkFuncName, Func<T1, T2, T3, object> func)
+    public void BindExternalFunction<T1, T2, T3>(string inkFuncName, Func<T1, T2, T3, object> func)
     {
-        this.story?.BindExternalFunction(inkFuncName, func);
+        story?.BindExternalFunction(inkFuncName, func);
     }
 
-    public void BindExternalFunction(String inkFuncName, Node node, String funcName)
+    public void BindExternalFunction(string inkFuncName, Node node, string funcName)
     {
-        this.story?.BindExternalFunctionGeneral(inkFuncName, (object[] foo) => node.Call(funcName, foo));
+        story?.BindExternalFunctionGeneral(inkFuncName, (object[] foo) => node.Call(funcName, foo));
     }
 
-    private object marshallVariableValue(object value_)
+    private object MarshallVariableValue(object value_)
     {
         if (value_ != null && value_.GetType() == typeof(Ink.Runtime.InkList))
             value_ = null;
         return value_;
     }
 
-    public object EvaluateFunction(String functionName, Boolean returnTextOutput, params object [] arguments)
+    public object EvaluateFunction(string functionName, bool returnTextOutput, params object [] arguments)
     {
         if (returnTextOutput)
         {
-            String textOutput = null;
-            object returnValue = this.story?.EvaluateFunction(functionName, out textOutput, arguments);
+            string textOutput = null;
+            object returnValue = story?.EvaluateFunction(functionName, out textOutput, arguments);
             return new object[] { returnValue, textOutput };
         }
-        return this.story?.EvaluateFunction(functionName, arguments);
+        return story?.EvaluateFunction(functionName, arguments);
     }
 
-    public String GetState()
+    public string GetState()
     {
-        return this.story.state.ToJson();
+        return story.state.ToJson();
     }
 
-    public void SaveStateOnDisk(String path)
+    public void SaveStateOnDisk(string path)
     {
         if (!path.StartsWith("res://") && !path.StartsWith("user://"))
             path = $"user://{path}";
         File file = new File();
         file.Open(path, File.ModeFlags.Write);
-        this.SaveStateOnDisk(file);
+        SaveStateOnDisk(file);
         file.Close();
     }
 
     public void SaveStateOnDisk(File file)
     {
         if (file.IsOpen())
-            file.StoreString(this.GetState());
+            file.StoreString(GetState());
     }
 
-    public void SetState(String state)
+    public void SetState(string state)
     {
-        this.story.state.LoadJson(state);
+        story.state.LoadJson(state);
     }
 
-    public void LoadStateFromDisk(String path)
+    public void LoadStateFromDisk(string path)
     {
         if (!path.StartsWith("res://") && !path.StartsWith("user://"))
             path = $"user://{path}";
         File file = new File();
         file.Open(path, File.ModeFlags.Read);
-        this.LoadStateFromDisk(file);
+        LoadStateFromDisk(file);
         file.Close();
     }
 
@@ -290,12 +292,12 @@ public class InkStory : Node
         {
             file.Seek(0);
             if (file.GetLen() > 0)
-                this.story.state.LoadJson(file.GetAsText());
+                story.state.LoadJson(file.GetAsText());
         }
     }
 
-    private Boolean isJSONFileValid()
+    private bool IsJSONFileValid()
     {
-        return this.InkFile != null && this.InkFile.HasMeta("content");
+        return InkFile?.HasMeta("content") == true;
     }
 }

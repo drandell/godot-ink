@@ -20,49 +20,49 @@ public class InkDock : Control
     {
         fileSelect = GetNode<OptionButton>("Container/Top/OptionButton");
         fileDialog = GetNode<FileDialog>("FileDialog");
-        fileSelect.Connect("item_selected", this, nameof(onFileSelectItemSelected));
-        fileDialog.Connect("file_selected", this, nameof(onFileDialogFileSelected));
-        fileDialog.Connect("popup_hide", this, nameof(onFileDialogHide));
+        fileSelect.Connect("item_selected", this, nameof(OnFileSelectItemSelected));
+        fileDialog.Connect("file_selected", this, nameof(OnFileDialogFileSelected));
+        fileDialog.Connect("popup_hide", this, nameof(OnFileDialogHide));
 
         storyNode = GetNode("Story");
         storyNode.SetScript(ResourceLoader.Load("res://addons/paulloz.ink/InkStory.cs") as Script);
-        storyNode.Connect(nameof(InkStory.InkChoices), this, nameof(onStoryChoices));
+        storyNode.Connect(nameof(InkStory.InkChoices), this, nameof(OnStoryChoices));
         storyText = GetNode<VBoxContainer>("Container/Bottom/Scroll/Margin/StoryText");
         storyChoices = GetNode<VBoxContainer>("Container/Bottom/StoryChoices");
 
-        scrollbar = this.GetNode<ScrollContainer>("Container/Bottom/Scroll").GetVScrollbar();
+        scrollbar = GetNode<ScrollContainer>("Container/Bottom/Scroll").GetVScrollbar();
     }
 
-    private void resetFileSelectItems()
+    private void ResetFileSelectItems()
     {
         while (fileSelect.GetItemCount() > 2)
             fileSelect.RemoveItem(fileSelect.GetItemCount() - 1);
     }
 
-    private void resetStoryContent()
+    private void ResetStoryContent()
     {
-        this.removeAllStoryContent();
-        this.removeAllChoices();
+        RemoveAllStoryContent();
+        RemoveAllChoices();
     }
 
-    private void removeAllStoryContent()
+    private void RemoveAllStoryContent()
     {
         foreach (Node n in storyText.GetChildren())
             storyText.RemoveChild(n);
     }
 
-    private void removeAllChoices()
+    private void RemoveAllChoices()
     {
         foreach (Node n in storyChoices.GetChildren())
             storyChoices.RemoveChild(n);
     }
 
-    private void onFileSelectItemSelected(int id)
+    private void OnFileSelectItemSelected(int id)
     {
         if (id == 0)
         {
-            resetFileSelectItems();
-            resetStoryContent();
+            ResetFileSelectItems();
+            ResetStoryContent();
             currentFilePath = "";
         }
         else if (id == 1)
@@ -72,75 +72,83 @@ public class InkDock : Control
         }
     }
 
-    private void onFileDialogFileSelected(String path)
+    private void OnFileDialogFileSelected(string path)
     {
         if (path.EndsWith(".json") || path.EndsWith(".ink"))
         {
-            resetFileSelectItems();
+            ResetFileSelectItems();
             fileSelect.AddItem(path.Substring(path.FindLast("/") + 1));
             currentFilePath = path;
         }
     }
 
-    private void onFileDialogHide()
+    private void OnFileDialogHide()
     {
-        if (currentFilePath == null || currentFilePath.Length == 0)
+        if (string.IsNullOrEmpty(currentFilePath))
+        {
             fileSelect.Select(0);
+        }
         else
         {
             fileSelect.Select(2);
             storyNode.Set("InkFile", ResourceLoader.Load(currentFilePath));
             storyNode.Call("LoadStory");
-            resetStoryContent();
-            continueStoryMaximally();
+            ResetStoryContent();
+            ContinueStoryMaximally();
         }
     }
 
-    private async void continueStoryMaximally()
+    private async void ContinueStoryMaximally()
     {
-        while ((bool)storyNode.Get("CanContinue"))
+        bool canContinue = (bool)storyNode.Get("CanContinue");
+
+        while (canContinue)
         {
             try
             {
                 storyNode.Call("Continue");
-                onStoryContinued(storyNode.Get("CurrentText") as String, new String[] { });
+                OnStoryContinued(storyNode.Get("CurrentText") as string, new string[] { });
             }
             catch (Ink.Runtime.StoryException e)
             {
-                onStoryContinued(e.ToString(), new String[] { });
+                OnStoryContinued(e.ToString(), new string[] { });
             }
         }
         await ToSignal(GetTree(), "idle_frame");
-        this.scrollbar.Value = this.scrollbar.MaxValue;
+        scrollbar.Value = scrollbar.MaxValue;
     }
 
-    private void onStoryContinued(String text, String[] tags)
+    private void OnStoryContinued(string text, string[] tags)
     {
-        Label newLine = new Label();
-        newLine.Autowrap = true;
-        newLine.Text = text.Trim(new char[] { ' ', '\n' });
-        this.storyText.AddChild(newLine);
+        Label newLine = new Label
+        {
+            Autowrap = true,
+            Text = text.Trim(new char[] { ' ', '\n' })
+        };
+        storyText.AddChild(newLine);
     }
 
-    private void onStoryChoices(String[] choices)
+    private void OnStoryChoices(string[] choices)
     {
         int i = 0;
-        foreach (String choice in choices)
+        foreach (string choice in choices)
         {
-            Button button = new Button();
-            button.Text = choice;
-            button.Connect("pressed", this, nameof(clickChoice), new Godot.Collections.Array() { i });
+            Button button = new Button
+            {
+                Text = choice
+            };
+            button.Connect("pressed", this, nameof(ClickChoice), new Godot.Collections.Array() { i });
             storyChoices.AddChild(button);
             ++i;
         }
     }
 
-    private void clickChoice(int idx)
+    private void ClickChoice(int idx)
     {
         storyNode.Callv("ChooseChoiceIndex", new Godot.Collections.Array() { idx });
-        this.removeAllChoices();
-        this.storyText.AddChild(new HSeparator());
-        continueStoryMaximally();
+        RemoveAllChoices();
+        storyText.AddChild(new HSeparator());
+        ContinueStoryMaximally();
     }
 }
 // #endif

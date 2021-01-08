@@ -1,12 +1,11 @@
 #if TOOLS
 using Godot;
 using Godot.Collections;
-using System;
 
 [Tool]
 public class PaullozDotInk : EditorPlugin
 {
-    private Dictionary settings = new Dictionary() {
+    private readonly Dictionary settings = new Dictionary() {
         {"inklecate_path", new Dictionary() {
             { "type", Variant.Type.String },
             { "hint", PropertyHint.GlobalFile },
@@ -14,7 +13,7 @@ public class PaullozDotInk : EditorPlugin
             { "default", "" }
         }}
     };
-    private const String addonBasePath = "res://addons/paulloz.ink";
+    private const string addonBasePath = "res://addons/paulloz.ink";
 
     private NodePath customTypeScriptPath = $"{addonBasePath}/InkStory.cs";
     private NodePath customTypeIconPath = $"{addonBasePath}/icon.svg";
@@ -28,9 +27,9 @@ public class PaullozDotInk : EditorPlugin
     public override void _EnterTree()
     {
         // Settings
-        foreach (String key in settings.Keys)
+        foreach (string key in settings.Keys)
         {
-            String property_name = $"ink/{key}";
+            string property_name = $"ink/{key}";
             if (!ProjectSettings.HasSetting(property_name))
             {
                 Dictionary setting = settings[key] as Dictionary;
@@ -70,9 +69,9 @@ public class PaullozDotInk : EditorPlugin
         RemoveImportPlugin(importPlugin);
 
         // Settings
-        foreach (String key in settings.Keys)
+        foreach (string key in settings.Keys)
         {
-            String property_name = $"ink/{key}";
+            string property_name = $"ink/{key}";
             if (ProjectSettings.HasSetting(property_name))
                 ProjectSettings.SetSetting(property_name, null);
         }
